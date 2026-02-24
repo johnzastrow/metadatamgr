@@ -9,7 +9,7 @@
 
 ---
 
-![.]{icons/icon.png)
+![icons/icon.png](icons/icon.png)
 
 ## Overview
 
