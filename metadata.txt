@@ -1,0 +1,212 @@
+# This file contains metadata for your plugin.
+
+[general]
+name=Metadata Manager
+qgisMinimumVersion=3.40
+description=Create and manage QGIS layer metadata with smart defaults, layer browser, and guided wizard. Integrates with inventory databases for efficient metadata workflows.
+version=0.6.1
+author=John Zastrow
+email=br8kwall@gmail.com
+
+about=Metadata Manager is a TRUE one-stop-shop for geospatial metadata management! Now includes BUILT-IN inventory creation - no need for separate Processing scripts. Create comprehensive geospatial data inventories directly within the plugin, then seamlessly create metadata for your layers. Features: (1) Integrated Inventory Scanner with full inventory_miner functionality, (2) Smart Defaults auto-populate from ALL metadata sources (FGDC, ESRI, ISO 19115, .qmd, embedded), (3) Layer Browser with filtering and Next/Previous navigation, (4) 4-step guided wizard with contact/link management, (5) Metadata Quality Dashboard with statistics and drill-downs, (6) Auto-save to database cache and .qmd files, (7) Unified GeoPackage database for inventory + metadata. Perfect for data managers who need to catalog AND document large geospatial data collections in a single, efficient workflow.
+
+tracker=https://github.com/johnzastrow/metadatamgr/issues
+repository=https://github.com/johnzastrow/metadatamgr
+# End of mandatory metadata
+
+# Recommended items:
+hasProcessingProvider=no
+changelog=
+    0.6.0 - MAJOR: Integrated Inventory Creation (One-Stop-Shop!)
+    - NEW: Inventory Integration Tab (FIRST tab in workflow)
+      * Full inventory_miner functionality built into plugin
+      * No need for separate Processing script!
+      * Scan directories for ALL geospatial data
+      * Parse metadata from FGDC, ESRI, ISO 19115, .qmd, embedded
+      * Create/update GeoPackage inventory database
+      * Progress monitoring with real-time log display
+      * Update mode preserves metadata status
+      * All options: vectors, rasters, tables, validation, sidecar tracking
+    - Enhanced Metadata Parsing
+      * Extracts from .shp.xml (FGDC/ESRI format)
+      * Extracts from .xml (ISO 19115/19139 format)
+      * Extracts from .qmd (QGIS native format)
+      * Extracts from embedded GeoPackage metadata
+      * All extracted metadata flows to Smart Defaults
+    - Workflow Integration
+      * 4-tab interface: ① Inventory → ② Dashboard → ③ Layer Browser → ④ Metadata Editor
+      * Inventory completion auto-connects database
+      * Auto-refreshes Dashboard + Layer Browser after scan
+      * Switches to Dashboard tab to show results
+      * "Use Current Database" button for convenience
+    - Background Processing
+      * Inventory runs in separate QThread (non-blocking UI)
+      * Stop button to cancel long-running scans
+      * Real-time progress bar and status updates
+      * Color-coded log display (ERROR=red, WARNING=orange, SUCCESS=green)
+    - New Files
+      * widgets/inventory_widget.py - UI for inventory creation
+      * processors/inventory_runner.py - Background processing
+      * processors/__init__.py - Processors package
+    0.5.0 - Phase 4: Smart Defaults and Layer Browser
+    - NEW: Smart Defaults from Inventory
+      * Auto-populate title (Title Case conversion: "roads_2024" → "Roads 2024")
+      * Auto-populate CRS, extents, geometry type, feature count
+      * Auto-populate field list, raster info in supplemental info
+      * Uses existing GIS metadata if available
+      * Saves massive time - user refines instead of entering from scratch
+    - NEW: Layer Browser Widget
+      * Embedded layer list with filtering (All, Needs Metadata, Partial, Complete)
+      * Search by layer name or path
+      * Next/Previous navigation buttons with position indicator
+      * Auto-save before navigation (seamless workflow)
+      * Double-click or select to load in wizard
+    - Enhanced Workflow Integration
+      * Layer selection loads smart defaults if no cached metadata
+      * Wizard → Save → Dashboard + Layer List auto-refresh
+      * Three-tab interface: Dashboard, Layer Browser, Metadata Editor
+      * Next/Previous navigation through filtered layers
+    - Smart Title Case conversion with common abbreviations (GPS, GIS, DEM, etc.)
+    - DatabaseManager: get_smart_defaults() method with comprehensive field mapping
+    - MetadataWizard: _convert_smart_defaults_to_metadata() for format conversion
+    0.4.1 - Bug Fix: Correct XML Serialization
+    - Fixed QgsLayerMetadata XML export
+      * Changed from toXml() (doesn't exist) to writeMetadataXml()
+      * Uses QDomDocument for proper XML serialization
+      * .qmd files now write correctly
+    - Tested with Excel file layer (.xls)
+    0.4.0 - MAJOR: Metadata File Writing Implemented
+    - CRITICAL: Metadata now writes to actual files!
+      * NEW: MetadataWriter class handles all file writing operations
+      * NEW: Writes .qmd sidecar files for Shapefiles, GeoTIFFs, etc.
+      * NEW: Embeds metadata in GeoPackage layers using QGIS API
+      * NEW: Automatic format detection (GeoPackage vs .qmd)
+    - Enhanced save workflow
+      * Save to cache first (backup/recovery)
+      * Write to target file (.qmd or embedded)
+      * Track write status (last_written_date, target_location, in_sync)
+      * Update inventory with target location
+    - Container file support
+      * Creates .qmd files named {container}_{layer}.qmd for multi-layer containers
+      * Properly handles GeoPackage/SQLite with multiple layers
+    - Comprehensive metadata conversion
+      * Full QgsLayerMetadata support (title, abstract, keywords, contacts, etc.)
+      * Spatial/temporal extents, CRS, links, rights, licenses, history
+      * ISO 19115 compliant metadata structure
+    - Enhanced error handling
+      * Graceful fallback if write fails (metadata still in cache)
+      * Detailed success/failure messages
+      * Write retry capability from cache
+    - Bug fixes
+      * Fixed layer selector to return file format
+      * Added format tracking to wizard
+      * Fixed metadata status bug for container files
+    0.3.6 - Critical Fix: Load SpatiaLite Extension
+    - CRITICAL: Fixed "no such function: ST_IsEmpty" error on metadata save
+      * Database connection now loads SpatiaLite extension
+      * Enables spatial functions required by GeoPackage triggers
+      * Tries multiple extension names (mod_spatialite, libspatialite)
+      * Falls back to QGIS install path on Windows
+    - Inventory status updates now work correctly
+    - Dashboard statistics can update after save
+    - Graceful warning if SpatiaLite can't be loaded
+    0.3.5 - Auto-Refresh Dashboard After Save
+    - Dashboard now automatically refreshes when metadata is saved
+      * Connected wizard metadata_saved signal to dashboard refresh
+      * No need to manually click "Refresh Statistics" after save
+      * Complete/Partial status updates immediately visible
+    - Enhanced logging for inventory updates
+      * Shows success with ✅ emoji and status
+      * Shows similar paths if layer not found (debugging aid)
+      * Uses SUCCESS level for successful updates
+    0.3.4 - Critical Bug Fix: Metadata Save Failure
+    - Fixed metadata_cache column name mismatches (CRITICAL - prevented all saves)
+      * created_date (was using created_datetime)
+      * last_edited_date (was using modified_datetime)
+      * Added layer_name to INSERT statement
+    - Fixed get_priority_recommendations column names
+      * parent_directory (was using directory_path)
+      * format (was using file_format)
+    - Metadata now saves successfully to cache
+    - Recommendations widget now works correctly
+    0.3.3 - UI Polish: Compact Dashboard Tables
+    - Dashboard table row height reduced to 16px for more compact display
+    - Vertical header hidden for cleaner appearance
+    - Consistent with wizard table styling (18px rows)
+    0.3.2 - Critical Bug Fix: Dashboard Statistics
+    - Fixed database column name mismatches
+      * parent_directory (was incorrectly using directory_path)
+      * format (was incorrectly using file_format)
+      * crs_authid (was incorrectly using crs)
+      * file_path (was incorrectly using layer_path in WHERE clause)
+    - All dashboard drill-down tabs now work correctly
+      * By Directory tab now shows statistics
+      * By File Format tab now shows statistics
+      * By CRS tab now shows statistics
+    - Fixed layer selector dialog column names
+    - Fixed inventory update query (metadata status now saves correctly)
+    0.3.1 - Flexible Database Selection
+    - Plugin now loads without requiring database selection
+    - Dashboard database selection controls
+      * "Select Database..." button with file dialog
+      * Visual connection status (green=connected, red=disconnected)
+      * Ability to change databases during session
+    - Wizard improvements
+      * Helpful message when trying to select layer without database
+      * Auto-clear when database changes
+      * Prevents invalid state
+    - Added clear_data() methods to all wizard steps
+    0.3.0 - Phase 3: Complete Wizard Implementation
+    - 4-Step Metadata Wizard (Essential, Common, Optional, Review)
+      * Step 1: Title, abstract, keywords, category
+      * Step 2: Contacts, license, constraints, language, attribution
+      * Step 3: Lineage, purpose, links, update frequency, spatial resolution
+      * Step 4: HTML summary with completeness status (Complete/Partial)
+    - Database Persistence
+      * Save metadata to cache as JSON
+      * Load metadata automatically when layer selected
+      * Update inventory tracking fields (status, last_updated)
+    - UI Enhancements
+      * Contact and link management dialogs
+      * Compact 18px table rows
+      * Color-coded status indicators
+      * Navigation with Next/Previous/Skip/Save
+    0.2.0 - Phase 1 & 2 Implementation
+    - Phase 1: Core Database Architecture
+      * Database management module with connection, validation, and initialization
+      * Dual version tracking (inventory + metadata schemas)
+      * Schema migration system
+      * Automatic database selection and persistence
+      * Integration with Inventory Miner v0.2.0+
+    - Phase 2: Metadata Quality Dashboard
+      * Dashboard widget with overall completion statistics
+      * Progress bar showing completion percentage
+      * Four drill-down views (Directory, Data Type, Format, CRS)
+      * Priority recommendations
+      * Color-coded visual feedback (green/orange/red)
+      * Refresh functionality
+    0.1.0 - Initial release
+    - Dockable widget interface
+    - Plugin Builder standard structure
+    - Ready for metadata management implementation
+
+# Tags are comma separated with spaces allowed
+tags=metadata, documentation, data management, catalog, inventory, geopackage
+
+homepage=https://github.com/johnzastrow/metadatamgr
+category=Vector
+icon=icon.svg
+# experimental flag
+experimental=True
+
+# deprecated flag (applies to the whole plugin, not just a single version)
+deprecated=False
+
+# Since QGIS 3.8, a comma separated list of plugins to be installed
+# (or upgraded) can be specified.
+# Check the documentation for more information.
+# plugin_dependencies=
+
+# If the plugin can run on QGIS Server.
+server=False
+
