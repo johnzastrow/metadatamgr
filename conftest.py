@@ -2,34 +2,45 @@
 Pytest configuration for Metadata Manager tests.
 
 Installs stub modules for qgis.* into sys.modules so that the test
-package __init__.py (which does `import qgis`) and any unit tests that
-mock QGIS classes can be collected and run outside a live QGIS environment.
+package __init__.py (which does `import qgis`) and any unit tests can
+be collected and run outside a live QGIS environment.
+
+Uses types.ModuleType subclasses with __getattr__ so that both attribute
+access (qgis.core.QgsField) and explicit imports
+(from qgis.PyQt.QtCore import QObject) return MagicMock objects.
 
 Tests that exercise QGIS-dependent logic (rendering, layer loading, etc.)
 still require a real QGIS instance and must be run inside QGIS.
 """
 
 import sys
+import types
 from unittest.mock import MagicMock
 
 
 def _install_qgis_stubs():
-    """Insert minimal stub modules for qgis.* before test collection."""
-    qgis = MagicMock()
-    qgis.core = MagicMock()
-    qgis.gui = MagicMock()
-    qgis.PyQt = MagicMock()
-    qgis.PyQt.QtCore = MagicMock()
-    qgis.PyQt.QtGui = MagicMock()
-    qgis.PyQt.QtWidgets = MagicMock()
+    """Insert stub modules for qgis.* before test collection."""
 
-    sys.modules.setdefault("qgis", qgis)
-    sys.modules.setdefault("qgis.core", qgis.core)
-    sys.modules.setdefault("qgis.gui", qgis.gui)
-    sys.modules.setdefault("qgis.PyQt", qgis.PyQt)
-    sys.modules.setdefault("qgis.PyQt.QtCore", qgis.PyQt.QtCore)
-    sys.modules.setdefault("qgis.PyQt.QtGui", qgis.PyQt.QtGui)
-    sys.modules.setdefault("qgis.PyQt.QtWidgets", qgis.PyQt.QtWidgets)
+    class _AutoMockModule(types.ModuleType):
+        """Module subclass that returns a MagicMock for any unknown attribute.
+        Supports both `import qgis.core; qgis.core.Foo` and
+        `from qgis.PyQt.QtCore import QObject` import styles.
+        """
+        def __getattr__(self, name: str):
+            mock = MagicMock(name=f"{self.__name__}.{name}")
+            setattr(self, name, mock)
+            return mock
+
+    for mod_name in [
+        "qgis",
+        "qgis.core",
+        "qgis.gui",
+        "qgis.PyQt",
+        "qgis.PyQt.QtCore",
+        "qgis.PyQt.QtGui",
+        "qgis.PyQt.QtWidgets",
+    ]:
+        sys.modules.setdefault(mod_name, _AutoMockModule(mod_name))
 
 
 _install_qgis_stubs()
