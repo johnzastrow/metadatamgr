@@ -39,6 +39,10 @@ def _install_qgis_stubs():
         "qgis.PyQt.QtCore",
         "qgis.PyQt.QtGui",
         "qgis.PyQt.QtWidgets",
+        # GDAL Python bindings (osgeo) used by inventory_processor.py
+        "osgeo",
+        "osgeo.gdal",
+        "osgeo.ogr",
     ]:
         sys.modules.setdefault(mod_name, _AutoMockModule(mod_name))
 
