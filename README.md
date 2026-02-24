@@ -9,6 +9,8 @@
 
 ---
 
+![.]{icons/icon.png)
+
 ## Overview
 
 **Metadata Manager** is a QGIS dockable panel that turns metadata creation from a chore into a streamlined workflow. It combines a built-in directory scanner, a reusable component library (organizations, contacts, keywords), and a progressive disclosure wizard into one panel — eliminating the back-and-forth between tools.
