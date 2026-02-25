@@ -2,7 +2,7 @@
 
 > A QGIS plugin for creating, managing, and tracking geospatial layer metadata — with integrated inventory scanning, a guided 4-step wizard, smart defaults, and a quality dashboard.
 
-[![Version](https://img.shields.io/badge/version-0.6.2-blue)](https://github.com/johnzastrow/metadatamgr/releases)
+[![Version](https://img.shields.io/badge/version-0.6.3-blue)](https://github.com/johnzastrow/metadatamgr/releases)
 [![QGIS](https://img.shields.io/badge/QGIS-3.40%2B-green)](https://qgis.org)
 [![License](https://img.shields.io/badge/license-GPL--2.0-orange)](LICENSE)
 [![Status](https://img.shields.io/badge/status-experimental-yellow)](https://github.com/johnzastrow/metadatamgr/releases)
@@ -353,6 +353,7 @@ See [docs/CHANGELOG.md](docs/CHANGELOG.md) for the full history.
 
 | Version | Highlights |
 |---------|-----------|
+| **0.6.3** | Fix Blue Miner plugin icon in Plugin Manager |
 | **0.6.2** | Fix scanner hang on PMTiles/JS, stop button, cancel dialog, re-scan data-loss |
 | **0.6.1** | Release ZIP cleanup |
 | **0.6.0** | Built-in inventory scanner — no separate script needed |

@@ -11,6 +11,13 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.6.3] — 2026-02-25
+
+### Fixed
+- Plugin icon in QGIS Plugin Manager now shows the Blue Miner instead of the generic green Plugin Builder icon. The `icon.svg` (Blue Miner figure) is now present at the plugin root where `metadata.txt icon=icon.svg` expects it.
+
+---
+
 ## [0.6.2] — 2026-02-24
 
 ### Fixed

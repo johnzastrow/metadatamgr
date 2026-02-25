@@ -4,7 +4,7 @@
 name=Metadata Manager
 qgisMinimumVersion=3.40
 description=Create and manage QGIS layer metadata with smart defaults, layer browser, and guided wizard. Integrates with inventory databases for efficient metadata workflows.
-version=0.6.2
+version=0.6.3
 author=John Zastrow
 email=br8kwall@gmail.com
 
@@ -17,6 +17,8 @@ repository=https://github.com/johnzastrow/metadatamgr
 # Recommended items:
 hasProcessingProvider=no
 changelog=
+    0.6.3 - Fix plugin icon: show Blue Miner instead of generic green icon
+    - Add icon.svg (Blue Miner) at plugin root so Plugin Manager displays it correctly
     0.6.2 - Bug fixes: inventory scanner hang, stop button, data-loss on re-scan
     - Fix: extension allow-list prevents ogr.Open() hanging on PMTiles, JS bundles, etc.
     - Fix: Stop button now re-enables UI immediately and force-terminates thread if needed

@@ -39,7 +39,7 @@ jobs:
              fix_metadata_status.py resources.py staging/$PLUGIN/
 
           # UI and static assets
-          cp MetadataManager_dockwidget_base.ui metadata.txt icon.png \
+          cp MetadataManager_dockwidget_base.ui metadata.txt icon.png icon.svg \
              resources.qrc README.md staging/$PLUGIN/
 
           # Subdirectory packages
