@@ -9,7 +9,7 @@ Author: John Zastrow
 License: MIT
 """
 
-__version__ = "0.1.0"
+__version__ = "0.6.4"
 
 import os
 from typing import Dict, Tuple, Optional
@@ -247,6 +247,10 @@ class MetadataWriter:
         """
         Write metadata directly to GeoPackage layer.
 
+        Uses QgsProviderRegistry.saveLayerMetadata() (QGIS 3.20+) which writes
+        directly to the GeoPackage's gpkg_metadata / gpkg_metadata_reference tables
+        without requiring a loaded layer.
+
         Args:
             layer_path: Full path to the GeoPackage file
             layer_name: Name of the layer within the GeoPackage
@@ -259,34 +263,32 @@ class MetadataWriter:
             # Convert dict to QgsLayerMetadata
             metadata = self.dict_to_qgs_metadata(metadata_dict)
 
-            # Construct layer URI
-            # Format: path/to/file.gpkg|layername=layer_name
+            # OGR data-source URI understood by both QgsVectorLayer and
+            # QgsProviderRegistry (path|layername=name)
             layer_uri = f"{layer_path}|layername={layer_name}"
 
-            # Try to load as vector first
+            # Validate that the layer actually exists before writing
             layer = QgsVectorLayer(layer_uri, "temp", "ogr")
-
             if not layer.isValid():
-                # Try as raster
                 layer = QgsRasterLayer(layer_uri, "temp")
-
             if not layer.isValid():
-                return False, f"Could not load layer: {layer_name} from {layer_path}"
+                return False, f"Could not open layer '{layer_name}' in {layer_path}"
 
-            # Set metadata
-            layer.setMetadata(metadata)
+            # Write metadata via the provider registry.
+            # QgsProviderRegistry.saveLayerMetadata('ogr', uri, metadata) calls
+            # QgsOgrProvider::saveLayerMetadata which stores the XML in the
+            # gpkg_metadata table and links it in gpkg_metadata_reference.
+            ok, error_msg = QgsProviderRegistry.instance().saveLayerMetadata(
+                'ogr', layer_uri, metadata
+            )
 
-            # Save metadata to the layer
-            # For GeoPackage, metadata is stored in the gpkg_metadata table
-            error = layer.saveMetadata()
-
-            if error:
+            if not ok:
                 QgsMessageLog.logMessage(
-                    f"Error saving metadata to GeoPackage: {error}",
+                    f"Error saving metadata to GeoPackage: {error_msg}",
                     "Metadata Manager",
                     Qgis.Warning
                 )
-                return False, error
+                return False, error_msg
 
             QgsMessageLog.logMessage(
                 f"Metadata written to GeoPackage layer: {layer_path} / {layer_name}",

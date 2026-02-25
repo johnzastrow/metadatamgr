@@ -11,6 +11,13 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.6.4] — 2026-02-25
+
+### Fixed
+- **Critical: metadata save to GeoPackage layers** — `write_to_geopackage()` called `layer.saveMetadata()` which does not exist on `QgsVectorLayer`. Replaced with `QgsProviderRegistry.instance().saveLayerMetadata('ogr', uri, metadata)`, the correct QGIS 3.20+ API that writes directly to the GeoPackage's `gpkg_metadata` and `gpkg_metadata_reference` tables.
+
+---
+
 ## [0.6.3] — 2026-02-25
 
 ### Fixed
