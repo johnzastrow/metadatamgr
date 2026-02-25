@@ -11,6 +11,16 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.6.2] — 2026-02-24
+
+### Fixed
+- **Scanner hang on PMTiles and web assets** — `_discover_geospatial_files()` now skips known non-geospatial extensions (`.pmtiles`, `.js`, `.html`, `.py`, `.pdf`, etc.) before calling `ogr.Open()` / `gdal.Open()`. GDAL's PMTiles driver (added in GDAL 3.8) would block in C-level I/O when scanning MapSplat output directories; the skip-list prevents this entirely. A summary of skipped files is logged.
+- **Stop button non-responsive** — `stop_inventory()` now re-enables the UI immediately (does not wait for the thread), calls `runner_thread.quit()`, and force-terminates via `runner_thread.terminate()` after a 3-second timeout if the thread is still blocked in GDAL C code.
+- **Cancel showed an error dialog** — the runner now emits a dedicated `canceled` signal instead of routing cancellation through the `error` signal. The widget handles `canceled` with a quiet log entry and no dialog.
+- **Re-scan wipes Metadata Manager tables** — `_write_geopackage()` now uses `QgsVectorFileWriter.CreateOrOverwriteLayer` (not `CreateOrOverwriteFile`) when the output database already exists, so `metadata_cache`, `organizations`, `contacts`, and other plugin tables are preserved across re-scans.
+
+---
+
 ## [0.6.1] — 2026-02-23
 
 ### Fixed

@@ -11,7 +11,7 @@ Author: John Zastrow
 License: MIT
 """
 
-__version__ = "0.6.0"
+__version__ = "0.6.2"
 
 from qgis.PyQt import QtWidgets, QtCore
 from qgis.PyQt.QtCore import Qt, pyqtSignal, QThread
@@ -332,8 +332,10 @@ class InventoryWidget(QtWidgets.QWidget):
         self.inventory_runner.status_updated.connect(self.on_status_updated)
         self.inventory_runner.log_message.connect(self.log_message)
         self.inventory_runner.finished.connect(self.on_inventory_finished)
+        self.inventory_runner.canceled.connect(self.on_inventory_canceled)
         self.inventory_runner.error.connect(self.on_inventory_error)
         self.inventory_runner.finished.connect(self.runner_thread.quit)
+        self.inventory_runner.canceled.connect(self.runner_thread.quit)
         self.inventory_runner.finished.connect(self.inventory_runner.deleteLater)
         self.runner_thread.finished.connect(self.runner_thread.deleteLater)
 
@@ -342,9 +344,28 @@ class InventoryWidget(QtWidgets.QWidget):
 
     def stop_inventory(self):
         """Stop inventory scan."""
+        self.log_message("WARNING", "Stopping inventory scan...")
+
+        # Set the cancellation flag so the processor can exit at its next check.
         if self.inventory_runner:
-            self.log_message("WARNING", "Stopping inventory scan...")
             self.inventory_runner.stop()
+
+        # Re-enable the UI immediately — don't wait for the thread.
+        self.run_btn.setEnabled(True)
+        self.stop_btn.setEnabled(False)
+        self.status_label.setText("Stopping…")
+
+        # Ask the thread's event loop to exit.  Give it 3 seconds to finish
+        # any Python-level work it was doing, then hard-terminate if still alive.
+        if self.runner_thread and self.runner_thread.isRunning():
+            self.runner_thread.quit()
+            if not self.runner_thread.wait(3000):
+                self.log_message("WARNING", "Thread did not respond — forcefully terminating")
+                self.runner_thread.terminate()
+                self.runner_thread.wait()
+
+        self.status_label.setText("Stopped")
+        self.log_message("INFO", "Inventory scan stopped")
 
     def on_progress_updated(self, percent: int):
         """Handle progress update."""
@@ -412,6 +433,13 @@ class InventoryWidget(QtWidgets.QWidget):
 
         # Emit signal
         self.inventory_created.emit(gpkg_path, layer_name)
+
+    def on_inventory_canceled(self):
+        """Handle user cancellation — not an error, no dialog."""
+        self.run_btn.setEnabled(True)
+        self.stop_btn.setEnabled(False)
+        self.status_label.setText("Canceled")
+        self.log_message("WARNING", "Inventory scan canceled by user")
 
     def on_inventory_error(self, error_message: str):
         """Handle inventory error."""

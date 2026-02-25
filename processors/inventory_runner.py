@@ -7,7 +7,7 @@ Author: John Zastrow
 License: MIT
 """
 
-__version__ = "0.6.0"
+__version__ = "0.6.2"
 
 from qgis.PyQt.QtCore import QObject, pyqtSignal
 from qgis.core import (
@@ -79,6 +79,7 @@ class InventoryRunner(QObject):
     status_updated = pyqtSignal(str, dict)  # status message, stats dict
     log_message = pyqtSignal(str, str)  # level, message
     finished = pyqtSignal(str, str, dict)  # gpkg_path, layer_name, stats
+    canceled = pyqtSignal()  # user pressed Stop — not an error
     error = pyqtSignal(str)  # error message
 
     def __init__(self, params):
@@ -123,7 +124,7 @@ class InventoryRunner(QObject):
 
             if self.feedback.isCanceled():
                 self.log_message.emit("WARNING", "Inventory scan was canceled by user")
-                self.error.emit("Scan canceled by user")
+                self.canceled.emit()
                 return
 
             # Extract statistics

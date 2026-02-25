@@ -8,7 +8,7 @@ Author: John Zastrow
 License: MIT
 """
 
-__version__ = "0.6.0"
+__version__ = "0.6.2"
 
 from pathlib import Path
 from datetime import datetime
@@ -35,6 +35,42 @@ from qgis.core import (
 )
 from qgis.PyQt.QtCore import QVariant
 import warnings
+
+# File extensions to skip before calling ogr.Open() / gdal.Open().
+# These are known non-geospatial types that GDAL would probe anyway (sometimes
+# blocking in C-level I/O for formats like PMTiles).  Adding an extension here
+# prevents the hang without hiding any legitimate GIS data.
+_SKIP_EXTENSIONS = frozenset({
+    # Web / UI assets
+    '.html', '.htm', '.css', '.js', '.ts', '.jsx', '.tsx', '.vue', '.svelte',
+    # Source code
+    '.py', '.rb', '.php', '.java', '.cpp', '.c', '.h', '.hpp', '.cs',
+    '.go', '.rs', '.swift', '.kt', '.scala',
+    # Scripts
+    '.sh', '.bash', '.zsh', '.bat', '.cmd', '.ps1',
+    # Text / documentation / config
+    '.txt', '.md', '.rst', '.log', '.ini', '.cfg', '.toml', '.yaml', '.yml',
+    # Office documents
+    '.pdf', '.docx', '.doc', '.xlsx', '.xls', '.pptx', '.ppt', '.odt', '.ods',
+    # Non-geospatial images
+    '.svg', '.ico', '.gif', '.bmp', '.webp',
+    # Video / audio
+    '.mp4', '.avi', '.mov', '.mkv', '.mp3', '.wav', '.flac', '.ogg',
+    # Archives
+    '.zip', '.gz', '.tar', '.7z', '.rar', '.bz2', '.xz',
+    # Shapefile sidecar components (not standalone layers)
+    '.dbf', '.shx', '.sbn', '.sbx', '.fbn', '.fbx', '.ain', '.aih',
+    '.prj', '.cpg', '.atx', '.ixs', '.mxs',
+    # Raster sidecar files
+    '.ovr', '.aux', '.lyr',
+    # Compiled / binary non-data
+    '.pyc', '.pyo', '.pyd', '.so', '.dll', '.exe', '.obj',
+    # Temp / lock files
+    '.lock', '.tmp', '.bak', '.swp', '.swo',
+    # Tile containers — binary tile packages that GDAL's PMTiles/MBTiles driver
+    # can open but are export artifacts, not source GIS layers to be inventoried.
+    '.pmtiles',
+})
 
 
 class InventoryProcessor:
@@ -178,12 +214,21 @@ class InventoryProcessor:
             List of dictionaries with file info
         """
         data_sources = []
+        skipped_count = 0
 
         for item_path in root_path.rglob("*"):
             if self.is_canceled():
                 break
 
             if not item_path.is_file():
+                continue
+
+            # Skip known non-geospatial extensions before any GDAL probe.
+            # This prevents hangs on formats like PMTiles that GDAL can open
+            # but block in C-level I/O, and avoids noise from web assets,
+            # source code, office docs, etc.
+            if item_path.suffix.lower() in _SKIP_EXTENSIONS:
+                skipped_count += 1
                 continue
 
             file_str = str(item_path)
@@ -225,6 +270,9 @@ class InventoryProcessor:
                         ds = None
                 except:
                     pass
+
+        if skipped_count:
+            self.log_info(f"Skipped {skipped_count} non-geospatial files (web assets, code, sidecar files, etc.)")
 
         return data_sources
 
@@ -741,10 +789,11 @@ class InventoryProcessor:
         options.layerName = layer_name
 
         if db_exists:
-            # Append to existing database
-            options.actionOnExistingFile = QgsVectorFileWriter.CreateOrOverwriteFile
+            # Replace only the inventory layer; other tables (metadata_cache,
+            # organizations, contacts, …) must not be touched.
+            options.actionOnExistingFile = QgsVectorFileWriter.CreateOrOverwriteLayer
         else:
-            # Create new database
+            # Brand-new database — create the file from scratch.
             options.actionOnExistingFile = QgsVectorFileWriter.CreateOrOverwriteFile
 
         self.log_info(f"Writing {len(qgs_features)} features to {layer_name}...")

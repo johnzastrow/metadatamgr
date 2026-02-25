@@ -4,7 +4,7 @@
 name=Metadata Manager
 qgisMinimumVersion=3.40
 description=Create and manage QGIS layer metadata with smart defaults, layer browser, and guided wizard. Integrates with inventory databases for efficient metadata workflows.
-version=0.6.1
+version=0.6.2
 author=John Zastrow
 email=br8kwall@gmail.com
 
@@ -17,6 +17,11 @@ repository=https://github.com/johnzastrow/metadatamgr
 # Recommended items:
 hasProcessingProvider=no
 changelog=
+    0.6.2 - Bug fixes: inventory scanner hang, stop button, data-loss on re-scan
+    - Fix: extension allow-list prevents ogr.Open() hanging on PMTiles, JS bundles, etc.
+    - Fix: Stop button now re-enables UI immediately and force-terminates thread if needed
+    - Fix: Cancel no longer shows an error dialog (uses separate canceled signal)
+    - Fix: Re-scan no longer wipes Metadata Manager tables (CreateOrOverwriteLayer)
     0.6.0 - MAJOR: Integrated Inventory Creation (One-Stop-Shop!)
     - NEW: Inventory Integration Tab (FIRST tab in workflow)
       * Full inventory_miner functionality built into plugin

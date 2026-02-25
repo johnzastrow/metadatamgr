@@ -156,7 +156,7 @@ rmdir /s "%APPDATA%\QGIS\QGIS3\profiles\default\python\plugins\MetadataManager"
 
 ## Version information
 
-- **Current release:** 0.6.1
+- **Current release:** 0.6.2
 - **QGIS minimum:** 3.40
 - **Repository:** https://github.com/johnzastrow/metadatamgr
 - **Issues:** https://github.com/johnzastrow/metadatamgr/issues
