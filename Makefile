@@ -1,246 +1,44 @@
-#/***************************************************************************
-# MetadataManager
-#
-# Helps users create metadata for layers following the QGIS
-standards. It will persist and allow reuse of information that may be applied to more than one layer, and guide
-users through creating layer-specific metadata elements for those layers in an inventory that does not have it
-#							 -------------------
-#		begin				: 2025-10-05
-#		git sha				: $Format:%H$
-#		copyright			: (C) 2025 by John Zastrow
-#		email				: br8kwall@gmail.com
-# ***************************************************************************/
-#
-#/***************************************************************************
-# *																		 *
-# *   This program is free software; you can redistribute it and/or modify  *
-# *   it under the terms of the GNU General Public License as published by  *
-# *   the Free Software Foundation; either version 2 of the License, or	 *
-# *   (at your option) any later version.								   *
-# *																		 *
-# ***************************************************************************/
+# QGIS plugin dev & release tasks. Portable across plugins: the plugin-specific file list lives
+# in scripts/build_plugin.sh, so this Makefile is (nearly) identical everywhere — only UNIT_TEST
+# changes per plugin. Requires: uv, zip, git, gh.   Run `make help`.
+SHELL := /bin/bash
+BANDIT_EXCLUDE := ./test,./tests,./help,./docs,./.git
+UNIT_TEST      := test/test_inventory_processor_unit.py   # <- per-plugin: the pure-Python test(s) CI runs
 
-#################################################
-# Edit the following to match your sources lists
-#################################################
+.DEFAULT_GOAL := help
+.PHONY: help check lint bandit secrets security test build strings clean tag
 
+help:            ## list targets
+	@grep -hE '^[a-z][a-z-]*:.*##' $(MAKEFILE_LIST) | sed -E 's/:[^#]*##/\t/' | sort | expand -t18
 
-#Add iso code for any locales you want to support here (space separated)
-# default is no locales
-# LOCALES = af
-LOCALES =
+check: lint bandit secrets test  ## run EVERY publish gate (ruff+flake8, bandit, secrets, tests)
 
-# If locales are enabled, set the name of the lrelease binary on your system. If
-# you have trouble compiling the translations, you may have to specify the full path to
-# lrelease
-#LRELEASE = lrelease
-#LRELEASE = lrelease-qt4
+lint:            ## ruff (fast) then flake8 (authoritative pre-publish check)
+	uv run --no-project --with ruff ruff check .
+	uv run --no-project --with flake8 flake8 .
 
+bandit:          ## security scan — fails on HIGH/MEDIUM (blocks plugins.qgis.org)
+	uv run --no-project --with bandit bandit -r . -x $(BANDIT_EXCLUDE) -ll
 
-# translation
-SOURCES = \
-	__init__.py \
-	MetadataManager.py MetadataManager_dockwidget.py
+secrets:         ## detect-secrets — fails if any secret is found
+	@uv run --no-project --with detect-secrets detect-secrets scan \
+	  | uv run --no-project python -c "import sys,json; r=json.load(sys.stdin).get('results',{}); print('secrets:', 'clean' if not r else 'FOUND '+str(list(r))); sys.exit(1 if r else 0)"
 
-PLUGINNAME = MetadataManager
+security: bandit secrets  ## bandit + secrets only
 
-PY_FILES = \
-	__init__.py \
-	MetadataManager.py MetadataManager_dockwidget.py
+test:            ## run the pure-Python unit test(s) that CI runs
+	uv run --no-project --with pytest python -m pytest $(UNIT_TEST) -q
 
-UI_FILES = MetadataManager_dockwidget_base.ui
+build:           ## build the upload zip (self-verifying — includes subpackages + LICENSE)
+	bash scripts/build_plugin.sh
 
-EXTRAS = metadata.txt icon.png
+strings:         ## compile i18n .ts -> .qm (if the plugin has translations)
+	@[ -x scripts/compile-strings.sh ] && bash scripts/compile-strings.sh || echo "no scripts/compile-strings.sh — skipping"
 
-EXTRA_DIRS =
+clean:           ## remove caches + built artefacts
+	rm -rf .ruff_cache **/__pycache__ __pycache__ *.zip resources.py
 
-COMPILED_RESOURCE_FILES = resources.py
-
-PEP8EXCLUDE=pydev,resources.py,conf.py,third_party,ui
-
-# QGISDIR points to the location where your plugin should be installed.
-# This varies by platform, relative to your HOME directory:
-#	* Linux:
-#	  .local/share/QGIS/QGIS3/profiles/default/python/plugins/
-#	* Mac OS X:
-#	  Library/Application Support/QGIS/QGIS3/profiles/default/python/plugins
-#	* Windows:
-#	  AppData\Roaming\QGIS\QGIS3\profiles\default\python\plugins'
-
-QGISDIR=C:\Users\br8kw\AppData/Roaming/QGIS/QGIS3/profiles/default/python/plugins
-
-#################################################
-# Normally you would not need to edit below here
-#################################################
-
-HELP = help/build/html
-
-PLUGIN_UPLOAD = $(c)/plugin_upload.py
-
-RESOURCE_SRC=$(shell grep '^ *<file' resources.qrc | sed 's@</file>@@g;s/.*>//g' | tr '\n' ' ')
-
-.PHONY: default
-default:
-	@echo While you can use make to build and deploy your plugin, pb_tool
-	@echo is a much better solution.
-	@echo A Python script, pb_tool provides platform independent management of
-	@echo your plugins and runs anywhere.
-	@echo You can install pb_tool using: pip install pb_tool
-	@echo See https://g-sherman.github.io/plugin_build_tool/ for info. 
-
-compile: $(COMPILED_RESOURCE_FILES)
-
-%.py : %.qrc $(RESOURCES_SRC)
-	pyrcc5 -o $*.py  $<
-
-%.qm : %.ts
-	$(LRELEASE) $<
-
-test: compile transcompile
-	@echo
-	@echo "----------------------"
-	@echo "Regression Test Suite"
-	@echo "----------------------"
-
-	@# Preceding dash means that make will continue in case of errors
-	@-export PYTHONPATH=`pwd`:$(PYTHONPATH); \
-		export QGIS_DEBUG=0; \
-		export QGIS_LOG_FILE=/dev/null; \
-		nosetests -v --with-id --with-coverage --cover-package=. \
-		3>&1 1>&2 2>&3 3>&- || true
-	@echo "----------------------"
-	@echo "If you get a 'no module named qgis.core error, try sourcing"
-	@echo "the helper script we have provided first then run make test."
-	@echo "e.g. source run-env-linux.sh <path to qgis install>; make test"
-	@echo "----------------------"
-
-deploy: compile doc transcompile
-	@echo
-	@echo "------------------------------------------"
-	@echo "Deploying plugin to your .qgis2 directory."
-	@echo "------------------------------------------"
-	# The deploy  target only works on unix like operating system where
-	# the Python plugin directory is located at:
-	# $HOME/$(QGISDIR)/python/plugins
-	mkdir -p $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)
-	cp -vf $(PY_FILES) $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)
-	cp -vf $(UI_FILES) $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)
-	cp -vf $(COMPILED_RESOURCE_FILES) $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)
-	cp -vf $(EXTRAS) $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)
-	cp -vfr i18n $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)
-	cp -vfr $(HELP) $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)/help
-	# Copy extra directories if any
-	(foreach EXTRA_DIR,(EXTRA_DIRS), cp -R (EXTRA_DIR) (HOME)/(QGISDIR)/python/plugins/(PLUGINNAME)/;)
-
-
-# The dclean target removes compiled python files from plugin directory
-# also deletes any .git entry
-dclean:
-	@echo
-	@echo "-----------------------------------"
-	@echo "Removing any compiled python files."
-	@echo "-----------------------------------"
-	find $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME) -iname "*.pyc" -delete
-	find $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME) -iname ".git" -prune -exec rm -Rf {} \;
-
-
-derase:
-	@echo
-	@echo "-------------------------"
-	@echo "Removing deployed plugin."
-	@echo "-------------------------"
-	rm -Rf $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)
-
-zip: deploy dclean
-	@echo
-	@echo "---------------------------"
-	@echo "Creating plugin zip bundle."
-	@echo "---------------------------"
-	# The zip target deploys the plugin and creates a zip file with the deployed
-	# content. You can then upload the zip file on http://plugins.qgis.org
-	rm -f $(PLUGINNAME).zip
-	cd $(HOME)/$(QGISDIR)/python/plugins; zip -9r $(CURDIR)/$(PLUGINNAME).zip $(PLUGINNAME)
-
-package: compile
-	# Create a zip package of the plugin named $(PLUGINNAME).zip.
-	# This requires use of git (your plugin development directory must be a
-	# git repository).
-	# To use, pass a valid commit or tag as follows:
-	#   make package VERSION=Version_0.3.2
-	@echo
-	@echo "------------------------------------"
-	@echo "Exporting plugin to zip package.	"
-	@echo "------------------------------------"
-	rm -f $(PLUGINNAME).zip
-	git archive --prefix=$(PLUGINNAME)/ -o $(PLUGINNAME).zip $(VERSION)
-	echo "Created package: $(PLUGINNAME).zip"
-
-upload: zip
-	@echo
-	@echo "-------------------------------------"
-	@echo "Uploading plugin to QGIS Plugin repo."
-	@echo "-------------------------------------"
-	$(PLUGIN_UPLOAD) $(PLUGINNAME).zip
-
-transup:
-	@echo
-	@echo "------------------------------------------------"
-	@echo "Updating translation files with any new strings."
-	@echo "------------------------------------------------"
-	@chmod +x scripts/update-strings.sh
-	@scripts/update-strings.sh $(LOCALES)
-
-transcompile:
-	@echo
-	@echo "----------------------------------------"
-	@echo "Compiled translation files to .qm files."
-	@echo "----------------------------------------"
-	@chmod +x scripts/compile-strings.sh
-	@scripts/compile-strings.sh $(LRELEASE) $(LOCALES)
-
-transclean:
-	@echo
-	@echo "------------------------------------"
-	@echo "Removing compiled translation files."
-	@echo "------------------------------------"
-	rm -f i18n/*.qm
-
-clean:
-	@echo
-	@echo "------------------------------------"
-	@echo "Removing uic and rcc generated files"
-	@echo "------------------------------------"
-	rm $(COMPILED_UI_FILES) $(COMPILED_RESOURCE_FILES)
-
-doc:
-	@echo
-	@echo "------------------------------------"
-	@echo "Building documentation using sphinx."
-	@echo "------------------------------------"
-	cd help; make html
-
-pylint:
-	@echo
-	@echo "-----------------"
-	@echo "Pylint violations"
-	@echo "-----------------"
-	@pylint --reports=n --rcfile=pylintrc . || true
-	@echo
-	@echo "----------------------"
-	@echo "If you get a 'no module named qgis.core' error, try sourcing"
-	@echo "the helper script we have provided first then run make pylint."
-	@echo "e.g. source run-env-linux.sh <path to qgis install>; make pylint"
-	@echo "----------------------"
-
-
-# Run pep8 style checking
-#http://pypi.python.org/pypi/pep8
-pep8:
-	@echo
-	@echo "-----------"
-	@echo "PEP8 issues"
-	@echo "-----------"
-	@pep8 --repeat --ignore=E203,E121,E122,E123,E124,E125,E126,E127,E128 --exclude $(PEP8EXCLUDE) . || true
-	@echo "-----------"
-	@echo "Ignored in PEP8 check:"
-	@echo $(PEP8EXCLUDE)
+tag:             ## tag + push a release, e.g. `make tag V=0.6.6` (CI builds the zip + GitHub Release)
+	@test -n "$(V)" || { echo "usage: make tag V=x.y.z"; exit 1; }
+	@git diff --quiet || { echo "working tree dirty — commit first"; exit 1; }
+	git tag -a v$(V) -m "v$(V)" && git push origin v$(V)
