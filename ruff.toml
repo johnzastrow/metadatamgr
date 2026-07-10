@@ -1,0 +1,14 @@
+# Tuned to mirror this repo's flake8 config (setup.cfg [flake8]) so `ruff check` catches
+# most of what flake8 flags. ruff and flake8 differ slightly — ruff doesn't implement the
+# pycodestyle continuation-indent checks (E12x) or W503/W504 — so ALWAYS run `flake8` before
+# publishing to be sure. Iterate fast with `ruff check --fix`.
+line-length = 120
+preview = true
+extend-exclude = ["test", "tests", "help", "i18n", "docs", "resources.py"]
+
+[lint]
+select = ["E", "F", "W"]
+extend-ignore = ["E501", "E203", "E741"]
+
+[lint.per-file-ignores]
+"MetadataManager.py" = ["F403"]   # `from .resources import *` — Qt resource registration (side-effect)

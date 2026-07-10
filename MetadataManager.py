@@ -26,8 +26,6 @@ users through creating layer-specific metadata elements for those layers in an i
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, Qt
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction
-# Initialize Qt resources from file resources.py
-from .resources import *
 
 # Import the code for the DockWidget
 from .MetadataManager_dockwidget import MetadataManagerDockWidget
@@ -41,7 +39,7 @@ from qgis.core import QgsMessageLog, Qgis
 class MetadataManager:
     """QGIS Plugin Implementation."""
 
-    __version__ = "0.4.1"
+    __version__ = "0.6.5"
 
     def __init__(self, iface):
         """Constructor.
@@ -83,7 +81,6 @@ class MetadataManager:
         self.migration_manager = MigrationManager()
         self.db_path = None
 
-
     # noinspection PyMethodMayBeStatic
     def tr(self, message):
         """Get the translation for a string using Qt translation API.
@@ -98,7 +95,6 @@ class MetadataManager:
         """
         # noinspection PyTypeChecker,PyArgumentList,PyCallByClass
         return QCoreApplication.translate('MetadataManager', message)
-
 
     def add_action(
         self,
@@ -173,23 +169,22 @@ class MetadataManager:
 
         return action
 
-
     def initGui(self):
         """Create the menu entries and toolbar icons inside the QGIS GUI."""
 
-        icon_path = ':/plugins/MetadataManager/icons/icon.svg'
+        icon_path = os.path.join(self.plugin_dir, 'icons', 'icon.svg')
         self.add_action(
             icon_path,
             text=self.tr(u'MetadataManager'),
             callback=self.run,
             parent=self.iface.mainWindow())
 
-    #--------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
 
     def onClosePlugin(self):
         """Cleanup necessary items here when plugin dockwidget is closed"""
 
-        #print "** CLOSING MetadataManager"
+        # print "** CLOSING MetadataManager"
 
         # disconnects
         self.dockwidget.closingPlugin.disconnect(self.onClosePlugin)
@@ -201,7 +196,6 @@ class MetadataManager:
         # self.dockwidget = None
 
         self.pluginIsActive = False
-
 
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
@@ -218,7 +212,7 @@ class MetadataManager:
         # remove the toolbar
         del self.toolbar
 
-    #--------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
 
     def select_database(self):
         """Prompt user to select inventory database."""
@@ -375,7 +369,7 @@ class MetadataManager:
             # dockwidget may not exist if:
             #    first run of plugin
             #    removed on close (see self.onClosePlugin method)
-            if self.dockwidget == None:
+            if self.dockwidget is None:
                 # Create the dockwidget (after translation) and keep reference
                 self.dockwidget = MetadataManagerDockWidget()
                 # Pass database manager to dockwidget
@@ -385,5 +379,5 @@ class MetadataManager:
             self.dockwidget.closingPlugin.connect(self.onClosePlugin)
 
             # show the dockwidget
-            self.iface.addDockWidget(Qt.RightDockWidgetArea, self.dockwidget)
+            self.iface.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self.dockwidget)
             self.dockwidget.show()

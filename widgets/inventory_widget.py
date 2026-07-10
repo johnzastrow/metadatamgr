@@ -14,7 +14,7 @@ License: MIT
 __version__ = "0.6.2"
 
 from qgis.PyQt import QtWidgets, QtCore
-from qgis.PyQt.QtCore import Qt, pyqtSignal, QThread
+from qgis.PyQt.QtCore import pyqtSignal, QThread
 from qgis.core import QgsMessageLog, Qgis
 from pathlib import Path
 
@@ -418,7 +418,7 @@ class InventoryWidget(QtWidgets.QWidget):
         self.status_label.setText("✓ Inventory complete!")
 
         # Show summary
-        summary = f"Inventory scan complete!\n\n"
+        summary = "Inventory scan complete!\n\n"
         summary += f"Database: {gpkg_path}\n"
         summary += f"Layer: {layer_name}\n\n"
         summary += f"Total records: {stats.get('total', 0)}\n"

@@ -66,7 +66,6 @@ class MigrationManager:
         #     "Add new field to templates table",
         #     self._migrate_0_1_to_0_2
         # ))
-        pass
 
     def get_migration_path(self, current_version: str, target_version: str) -> List[Migration]:
         """

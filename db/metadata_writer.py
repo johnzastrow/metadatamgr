@@ -12,7 +12,7 @@ License: MIT
 __version__ = "0.6.4"
 
 import os
-from typing import Dict, Tuple, Optional
+from typing import Dict, Tuple
 from qgis.core import (
     QgsLayerMetadata,
     QgsVectorLayer,
@@ -28,7 +28,6 @@ class MetadataWriter:
 
     def __init__(self):
         """Initialize metadata writer."""
-        pass
 
     def dict_to_qgs_metadata(self, metadata_dict: Dict) -> QgsLayerMetadata:
         """

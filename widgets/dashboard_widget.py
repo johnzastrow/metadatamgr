@@ -9,9 +9,9 @@ License: MIT
 
 __version__ = "0.2.0"
 
-from qgis.PyQt import QtWidgets, QtCore, QtGui
+from qgis.PyQt import QtWidgets, QtGui
 from qgis.PyQt.QtCore import Qt
-from typing import Optional, List, Dict
+from typing import List, Dict
 
 
 class DashboardWidget(QtWidgets.QWidget):
@@ -37,7 +37,7 @@ class DashboardWidget(QtWidgets.QWidget):
 
         # Title - more compact
         title_label = QtWidgets.QLabel("<b>Metadata Quality Dashboard</b>")
-        title_label.setAlignment(Qt.AlignCenter)
+        title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(title_label)
 
         # Database selection section
@@ -78,7 +78,7 @@ class DashboardWidget(QtWidgets.QWidget):
         # Tab widget for drill-down views (scrollable)
         scroll_area = QtWidgets.QScrollArea()
         scroll_area.setWidgetResizable(True)
-        scroll_area.setFrameShape(QtWidgets.QFrame.NoFrame)
+        scroll_area.setFrameShape(QtWidgets.QFrame.Shape.NoFrame)
 
         tab_container = QtWidgets.QWidget()
         tab_layout = QtWidgets.QVBoxLayout(tab_container)
@@ -166,8 +166,8 @@ class DashboardWidget(QtWidgets.QWidget):
         table.setHorizontalHeaderLabels([label, "Total", "Complete", "Partial", "None", "% Complete"])
         table.horizontalHeader().setStretchLastSection(True)
         table.setAlternatingRowColors(True)
-        table.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
-        table.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
+        table.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
+        table.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
 
         # Set compact row height
         table.verticalHeader().setDefaultSectionSize(16)

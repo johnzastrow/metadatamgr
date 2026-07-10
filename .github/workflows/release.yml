@@ -20,10 +20,10 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install pyqt5 pytest
+        run: pip install pytest
 
-      - name: Compile Qt resources
-        run: pyrcc5 -o resources.py resources.qrc
+      # No Qt resource compilation: icons load from plain file paths under icons/,
+      # so there is no pyrcc5 step and no generated resources.py.
 
       - name: Run unit tests
         # Only run the pure-Python unit test; the others require a live QGIS instance
@@ -36,11 +36,11 @@ jobs:
 
           # Root-level Python source files
           cp __init__.py MetadataManager.py MetadataManager_dockwidget.py \
-             fix_metadata_status.py resources.py staging/$PLUGIN/
+             fix_metadata_status.py staging/$PLUGIN/
 
           # UI and static assets
-          cp MetadataManager_dockwidget_base.ui metadata.txt icon.png icon.svg \
-             resources.qrc README.md staging/$PLUGIN/
+          cp MetadataManager_dockwidget_base.ui metadata.txt icon.png icon.svg LICENSE \
+             README.md staging/$PLUGIN/
 
           # Subdirectory packages
           cp -r db processors widgets staging/$PLUGIN/

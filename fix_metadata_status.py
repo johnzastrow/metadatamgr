@@ -37,13 +37,13 @@ def fix_metadata_status(db_path: str):
         # Try different possible extension names/paths
         try:
             conn.load_extension('mod_spatialite')
-        except:
+        except Exception:
             try:
                 conn.load_extension('libspatialite')
-            except:
+            except Exception:
                 try:
                     conn.load_extension('spatialite')
-                except:
+                except Exception:
                     print("Warning: Could not load SpatiaLite extension. Trying anyway...")
     except Exception as e:
         print(f"Warning: Extension loading not available: {e}")

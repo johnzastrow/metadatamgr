@@ -26,7 +26,7 @@ users through creating layer-specific metadata elements for those layers in an i
 
 import os
 
-from qgis.PyQt import QtGui, QtWidgets, uic
+from qgis.PyQt import QtWidgets, uic
 from qgis.PyQt.QtCore import pyqtSignal
 
 from .widgets import DashboardWidget, MetadataWizard, LayerListWidget, InventoryWidget

@@ -11,9 +11,7 @@ __version__ = "0.6.2"
 
 from qgis.PyQt.QtCore import QObject, pyqtSignal
 from qgis.core import (
-    QgsProcessingFeedback,
-    QgsMessageLog,
-    Qgis
+    QgsProcessingFeedback
 )
 
 

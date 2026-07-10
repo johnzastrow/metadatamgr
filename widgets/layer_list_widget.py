@@ -85,9 +85,9 @@ class LayerListWidget(QtWidgets.QWidget):
             "Layer Name", "Status", "Data Type", "Format", "Directory"
         ])
         self.layers_table.horizontalHeader().setStretchLastSection(True)
-        self.layers_table.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
-        self.layers_table.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
-        self.layers_table.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
+        self.layers_table.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
+        self.layers_table.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
+        self.layers_table.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
         self.layers_table.setSortingEnabled(True)
 
         # Compact rows
@@ -230,11 +230,11 @@ class LayerListWidget(QtWidgets.QWidget):
             # Status with color coding
             status_item = QtWidgets.QTableWidgetItem(layer['status'].title())
             if layer['status'] == 'complete':
-                status_item.setForeground(QtCore.Qt.darkGreen)
+                status_item.setForeground(QtCore.Qt.GlobalColor.darkGreen)
             elif layer['status'] == 'partial':
-                status_item.setForeground(QtCore.Qt.darkYellow)
+                status_item.setForeground(QtCore.Qt.GlobalColor.darkYellow)
             else:
-                status_item.setForeground(QtCore.Qt.red)
+                status_item.setForeground(QtCore.Qt.GlobalColor.red)
             self.layers_table.setItem(i, 1, status_item)
 
             # Data type
@@ -247,8 +247,8 @@ class LayerListWidget(QtWidgets.QWidget):
             self.layers_table.setItem(i, 4, QtWidgets.QTableWidgetItem(layer['directory']))
 
             # Store full path and format in row data
-            self.layers_table.item(i, 0).setData(Qt.UserRole, layer['path'])
-            self.layers_table.item(i, 0).setData(Qt.UserRole + 1, layer['format'])
+            self.layers_table.item(i, 0).setData(Qt.ItemDataRole.UserRole, layer['path'])
+            self.layers_table.item(i, 0).setData(Qt.ItemDataRole.UserRole + 1, layer['format'])
 
         self.layers_table.setSortingEnabled(True)
 
@@ -273,8 +273,8 @@ class LayerListWidget(QtWidgets.QWidget):
         # Get layer info from selected row
         name_item = self.layers_table.item(current_row, 0)
         layer_name = name_item.text()
-        layer_path = name_item.data(Qt.UserRole)
-        layer_format = name_item.data(Qt.UserRole + 1)
+        layer_path = name_item.data(Qt.ItemDataRole.UserRole)
+        layer_format = name_item.data(Qt.ItemDataRole.UserRole + 1)
 
         self.current_layer_index = current_row
         self.update_navigation_buttons()

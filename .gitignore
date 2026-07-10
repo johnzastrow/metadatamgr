@@ -20,3 +20,9 @@ resources.py
 .python-version
 uv.lock
 pyproject.toml
+
+# Ruff cache
+.ruff_cache/
+
+# Built plugin zip (release artifact)
+MetadataManager.zip

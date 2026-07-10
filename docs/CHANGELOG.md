@@ -11,6 +11,29 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.6.5] — 2026-07-09
+
+### Security
+- **Possible SQL injection fixed** — the inventory table name interpolated into
+  `_load_existing_inventory()` / `_retire_old_records()` is now validated against a strict
+  identifier allowlist (`_safe_identifier()`) before use. (Bandit B608)
+- **Removed the `subprocess` call** — the Unix mount-point lookup shelled out to `df`; it now walks
+  the path with pure-Python `os.path.ismount()`. (Bandit B404/B603/B607)
+- **XML parsing annotated** — `ElementTree` parses only local, user-selected sidecar files (no
+  external/network entities). (Bandit B405/B314)
+- Passes **Bandit** (0 high/medium), **detect-secrets**, and **flake8** — the plugins.qgis.org gates.
+
+### Changed
+- Replaced all bare `except:` handlers with `except Exception:`; removed unused imports.
+- Metadata: `experimental=False`, `category=Plugins`; changelog field trimmed (full history here).
+- Added `LICENSE` (GPL-2.0-or-later, matching the source headers).
+
+### Added
+- `scripts/build_plugin.sh` — a reliable, CI-equivalent local build of the upload zip.
+- `ruff.toml` + `setup.cfg` [flake8] — shared lint config (iterate with ruff, verify with flake8).
+
+---
+
 ## [0.6.4] — 2026-02-25
 
 ### Fixed

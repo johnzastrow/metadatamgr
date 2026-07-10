@@ -5,36 +5,47 @@ Refactored from inventory_miner.py to work directly within plugin.
 Scans directories for geospatial files and creates/updates GeoPackage inventory.
 
 Author: John Zastrow
-License: MIT
+License: GPL-2.0-or-later
 """
 
-__version__ = "0.6.2"
+__version__ = "0.6.5"
 
+import re
 from pathlib import Path
 from datetime import datetime
 from osgeo import gdal, ogr
-import xml.etree.ElementTree as ET
+import xml.etree.ElementTree as ET  # nosec B405 - parses only local, user-selected metadata
+# sidecar files; stdlib ElementTree resolves no external/network entities.
 import sqlite3
 
 from qgis.core import (
     QgsVectorLayer,
-    QgsRasterLayer,
     QgsCoordinateReferenceSystem,
-    QgsCoordinateTransform,
     QgsProject,
     QgsFeature,
     QgsField,
     QgsFields,
     QgsGeometry,
-    QgsRectangle,
     QgsPointXY,
-    QgsVectorFileWriter,
-    QgsWkbTypes,
-    QgsMessageLog,
-    Qgis
+    QgsVectorFileWriter
 )
 from qgis.PyQt.QtCore import QVariant
 import warnings
+
+
+# SQL identifiers (table/column names) can't be bound as parameters, so any name that is
+# interpolated into a statement must be validated against a strict allowlist first.
+_IDENTIFIER_RE = re.compile(r'^[A-Za-z_][A-Za-z0-9_]*$')
+
+
+def _safe_identifier(name):
+    """Return `name` if it is a safe SQL identifier (ASCII letters, digits, underscore;
+    not starting with a digit); otherwise raise ValueError. Prevents SQL injection via a
+    user-supplied inventory table name."""
+    if not isinstance(name, str) or not _IDENTIFIER_RE.match(name):
+        raise ValueError(f"unsafe SQL identifier: {name!r}")
+    return name
+
 
 # File extensions to skip before calling ogr.Open() / gdal.Open().
 # These are known non-geospatial types that GDAL would probe anyway (sometimes
@@ -253,7 +264,7 @@ class InventoryProcessor:
                                     })
                         ds = None
                         continue
-                except:
+                except Exception:
                     pass
 
             # Try as raster (GDAL)
@@ -268,7 +279,7 @@ class InventoryProcessor:
                             'layer_index': 0
                         })
                         ds = None
-                except:
+                except Exception:
                     pass
 
         if skipped_count:
@@ -312,7 +323,7 @@ class InventoryProcessor:
             try:
                 parts = file_path_str.replace('\\\\', '').replace('//', '').split('\\')[0].split('/')[0]
                 feature_data['network_server'] = parts
-            except:
+            except Exception:
                 feature_data['network_server'] = 'unknown'
         else:
             feature_data['storage_location'] = 'local'
@@ -320,29 +331,27 @@ class InventoryProcessor:
 
         # Drive letter (Windows) or mount point (Unix)
         try:
+            import os
             if platform.system() == 'Windows':
-                import os
                 drive = os.path.splitdrive(file_path_str)[0]
                 feature_data['drive_or_mount'] = drive if drive else None
             else:
-                # Unix - get mount point
-                import subprocess
-                result = subprocess.run(['df', file_path_str], capture_output=True, text=True)
-                if result.returncode == 0:
-                    lines = result.stdout.strip().split('\n')
-                    if len(lines) > 1:
-                        mount_point = lines[1].split()[-1]
-                        feature_data['drive_or_mount'] = mount_point
-        except:
+                # Unix - find the mount point in pure Python (no subprocess): walk up
+                # the path until os.path.ismount() is true. Avoids shelling out to `df`.
+                path = os.path.realpath(file_path_str)
+                while path != os.sep and not os.path.ismount(path):
+                    path = os.path.dirname(path)
+                feature_data['drive_or_mount'] = path
+        except Exception:
             feature_data['drive_or_mount'] = None
 
         try:
             stat = file_path.stat()
             feature_data['file_size_bytes'] = stat.st_size
-            feature_data['file_size_mb'] = round(stat.st_size / (1024*1024), 2)
+            feature_data['file_size_mb'] = round(stat.st_size / (1024 * 1024), 2)
             feature_data['file_created'] = datetime.fromtimestamp(stat.st_ctime).isoformat()
             feature_data['file_modified'] = datetime.fromtimestamp(stat.st_mtime).isoformat()
-        except:
+        except Exception:
             pass
 
         # Extract type-specific metadata
@@ -534,7 +543,7 @@ class InventoryProcessor:
             p2 = transform.TransformPoint(xmax, ymax)
 
             feature_data['wgs84_extent'] = f"{p1[0]},{p1[1]},{p2[0]},{p2[1]}"
-        except:
+        except Exception:
             pass
 
     def _parse_gis_metadata(self, feature_data, file_path):
@@ -548,7 +557,7 @@ class InventoryProcessor:
         for xml_path in xml_candidates:
             if xml_path.exists():
                 try:
-                    tree = ET.parse(xml_path)
+                    tree = ET.parse(xml_path)  # nosec B314 - local user-selected sidecar; no external entities
                     root = tree.getroot()
 
                     feature_data['has_metadata_xml'] = True
@@ -571,7 +580,7 @@ class InventoryProcessor:
                         self._parse_qgis_metadata(feature_data, root)
 
                     break  # Found metadata, stop looking
-                except:
+                except Exception:
                     pass
 
     def _parse_fgdc_metadata(self, feature_data, root):
@@ -604,7 +613,7 @@ class InventoryProcessor:
             useconst_elem = root.find('.//useconst')
             if useconst_elem is not None and useconst_elem.text:
                 feature_data['constraints'] = useconst_elem.text.strip()
-        except:
+        except Exception:
             pass
 
     def _parse_esri_metadata(self, feature_data, root):
@@ -615,7 +624,7 @@ class InventoryProcessor:
                 if 'title' in elem.tag.lower() and elem.text:
                     feature_data['layer_title'] = elem.text.strip()
                     break
-        except:
+        except Exception:
             pass
 
     def _parse_iso_metadata(self, feature_data, root):
@@ -632,7 +641,7 @@ class InventoryProcessor:
             abstract_elem = root.find('.//abstract')
             if abstract_elem is not None and abstract_elem.text:
                 feature_data['layer_abstract'] = abstract_elem.text.strip()
-        except:
+        except Exception:
             pass
 
     def _check_sidecar_files(self, feature_data, file_path):
@@ -672,13 +681,14 @@ class InventoryProcessor:
             ]
 
             return QgsGeometry.fromPolygonXY([points])
-        except:
+        except Exception:
             return None
 
     def _load_existing_inventory(self, gpkg_path, layer_name):
         """Load existing inventory for update mode."""
         inventory = {}
         try:
+            layer_name = _safe_identifier(layer_name)  # guard the interpolated table name
             conn = sqlite3.connect(gpkg_path)
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
@@ -688,14 +698,14 @@ class InventoryProcessor:
                        metadata_last_updated, metadata_target
                 FROM {layer_name}
                 WHERE retired_datetime IS NULL
-            """)
+            """)  # nosec B608 - layer_name validated by _safe_identifier() above
 
             for row in cursor.fetchall():
                 key = (row['file_path'], row['layer_name'])
                 inventory[key] = dict(row)
 
             conn.close()
-        except:
+        except Exception:
             pass
 
         return inventory
@@ -704,6 +714,7 @@ class InventoryProcessor:
         """Mark missing files as retired."""
         retired_count = 0
         try:
+            layer_name = _safe_identifier(layer_name)  # guard the interpolated table name
             conn = sqlite3.connect(output_gpkg)
             cursor = conn.cursor()
 
@@ -713,7 +724,7 @@ class InventoryProcessor:
                         UPDATE {layer_name}
                         SET retired_datetime = ?
                         WHERE file_path = ? AND layer_name = ? AND retired_datetime IS NULL
-                    """, (datetime.now().isoformat(), file_path, layer_name_val))
+                    """, (datetime.now().isoformat(), file_path, layer_name_val))  # nosec B608 - validated identifier
                     retired_count += 1
 
             conn.commit()
@@ -733,7 +744,7 @@ class InventoryProcessor:
         fields = self._create_fields()
 
         # Create memory layer
-        mem_layer = QgsVectorLayer(f"Polygon?crs=EPSG:4326", layer_name, "memory")
+        mem_layer = QgsVectorLayer("Polygon?crs=EPSG:4326", layer_name, "memory")
         mem_provider = mem_layer.dataProvider()
         mem_provider.addAttributes(fields.toList())
         mem_layer.updateFields()

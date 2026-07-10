@@ -10,8 +10,6 @@ License: MIT
 
 import sqlite3
 import json
-from pathlib import Path
-from datetime import datetime
 from typing import Optional, Dict, List, Tuple
 
 from qgis.core import QgsMessageLog, Qgis
@@ -63,10 +61,10 @@ class DatabaseManager:
                 # Try loading SpatiaLite (path varies by platform)
                 try:
                     self.connection.load_extension("mod_spatialite")
-                except:
+                except Exception:
                     try:
                         self.connection.load_extension("libspatialite")
-                    except:
+                    except Exception:
                         # On Windows, might be in QGIS install
                         import platform
                         if platform.system() == "Windows":

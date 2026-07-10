@@ -9,10 +9,9 @@ License: MIT
 
 __version__ = "0.4.0"
 
-from qgis.PyQt import QtWidgets, QtCore, QtGui
+from qgis.PyQt import QtWidgets, QtCore
 from qgis.PyQt.QtCore import Qt, pyqtSignal
-from typing import Optional, Dict, List
-import json
+from typing import Dict, List
 
 from .layer_selector_dialog import LayerSelectorDialog
 
@@ -114,7 +113,6 @@ class StepWidget(QtWidgets.QWidget):
         Args:
             data: Dictionary of field values
         """
-        pass
 
     def is_complete(self) -> bool:
         """
@@ -235,7 +233,7 @@ class Step1Essential(StepWidget):
     def create_keyword_tag(self, keyword: str):
         """Create a removable tag widget for keyword."""
         tag = QtWidgets.QFrame()
-        tag.setFrameStyle(QtWidgets.QFrame.StyledPanel)
+        tag.setFrameStyle(QtWidgets.QFrame.Shape.StyledPanel)
         tag.setStyleSheet("background-color: lightblue; border-radius: 3px; padding: 2px;")
 
         tag_layout = QtWidgets.QHBoxLayout(tag)
@@ -364,7 +362,7 @@ class Step2Common(StepWidget):
         self.contacts_table = QtWidgets.QTableWidget(0, 3)
         self.contacts_table.setHorizontalHeaderLabels(["Role", "Name", "Organization"])
         self.contacts_table.horizontalHeader().setStretchLastSection(True)
-        self.contacts_table.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
+        self.contacts_table.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
         self.contacts_table.setMaximumHeight(150)
         # Make rows more compact
         self.contacts_table.verticalHeader().setDefaultSectionSize(18)
@@ -483,7 +481,7 @@ class Step2Common(StepWidget):
     def add_contact(self):
         """Show dialog to add a contact."""
         dialog = ContactDialog(self.db_manager, self)
-        if dialog.exec_():
+        if dialog.exec():
             contact = dialog.get_contact()
             self.contacts.append(contact)
             self.refresh_contacts_table()
@@ -496,7 +494,7 @@ class Step2Common(StepWidget):
 
         contact = self.contacts[row]
         dialog = ContactDialog(self.db_manager, self, contact)
-        if dialog.exec_():
+        if dialog.exec():
             updated_contact = dialog.get_contact()
             self.contacts[row] = updated_contact
             self.refresh_contacts_table()
@@ -674,7 +672,7 @@ class ContactDialog(QtWidgets.QDialog):
 
         # Buttons
         button_box = QtWidgets.QDialogButtonBox(
-            QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel
+            QtWidgets.QDialogButtonBox.StandardButton.Ok | QtWidgets.QDialogButtonBox.StandardButton.Cancel
         )
         button_box.accepted.connect(self.accept)
         button_box.rejected.connect(self.reject)
@@ -761,7 +759,7 @@ class Step3Optional(StepWidget):
         self.links_table = QtWidgets.QTableWidget(0, 3)
         self.links_table.setHorizontalHeaderLabels(["Name", "URL", "Type"])
         self.links_table.horizontalHeader().setStretchLastSection(True)
-        self.links_table.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
+        self.links_table.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
         self.links_table.setMaximumHeight(120)
         # Make rows compact
         self.links_table.verticalHeader().setDefaultSectionSize(18)
@@ -842,7 +840,7 @@ class Step3Optional(StepWidget):
     def add_link(self):
         """Show dialog to add a link."""
         dialog = LinkDialog(self)
-        if dialog.exec_():
+        if dialog.exec():
             link = dialog.get_link()
             self.links.append(link)
             self.refresh_links_table()
@@ -855,7 +853,7 @@ class Step3Optional(StepWidget):
 
         link = self.links[row]
         dialog = LinkDialog(self, link)
-        if dialog.exec_():
+        if dialog.exec():
             updated_link = dialog.get_link()
             self.links[row] = updated_link
             self.refresh_links_table()
@@ -996,7 +994,7 @@ class LinkDialog(QtWidgets.QDialog):
 
         # Buttons
         button_box = QtWidgets.QDialogButtonBox(
-            QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel
+            QtWidgets.QDialogButtonBox.StandardButton.Ok | QtWidgets.QDialogButtonBox.StandardButton.Cancel
         )
         button_box.accepted.connect(self.accept)
         button_box.rejected.connect(self.reject)
@@ -1046,7 +1044,7 @@ class Step4Review(StepWidget):
         # Status indicator
         self.status_label = QtWidgets.QLabel()
         self.status_label.setStyleSheet("font-size: 14px; font-weight: bold; padding: 10px;")
-        self.status_label.setAlignment(Qt.AlignCenter)
+        self.status_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         main_layout.addWidget(self.status_label)
 
         # Summary display (scrollable)
@@ -1243,7 +1241,6 @@ class Step4Review(StepWidget):
 
     def set_data(self, data: Dict):
         """Review step doesn't need to set data."""
-        pass
 
     def clear_data(self):
         """Clear the summary display."""
@@ -1280,7 +1277,7 @@ class MetadataWizard(QtWidgets.QWidget):
 
         # Header - compact
         header = QtWidgets.QLabel("<b>Metadata Editor</b>")
-        header.setAlignment(Qt.AlignCenter)
+        header.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(header)
 
         # Layer selection - compact
@@ -1381,7 +1378,7 @@ class MetadataWizard(QtWidgets.QWidget):
 
         dialog = LayerSelectorDialog(self.db_manager, self)
 
-        if dialog.exec_():
+        if dialog.exec():
             layer_path, layer_name, layer_format = dialog.get_selected_layer()
             if layer_path:
                 self.current_layer_path = layer_path
