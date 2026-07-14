@@ -1,0 +1,37 @@
+# Security gates + tests on every push and PR, so problems surface before a release tag.
+# Mirrors the release gates but runs Bandit at ALL severities — matching the plugins.qgis.org
+# validator, which blocks on low-severity findings that `-ll` would skip.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  gates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+
+      - name: flake8
+        run: uv run --no-project --with flake8 flake8 .
+
+      - name: bandit (all severities — matches the QGIS plugin validator)
+        run: uv run --no-project --with bandit bandit -r . -x ./test,./tests,./docs,./.git,./lib
+
+      - name: detect-secrets (fail on any secret not in the baseline)
+        run: |
+          uv run --no-project --with detect-secrets \
+            detect-secrets-hook --baseline .secrets.baseline $(git ls-files)
+
+      - name: tests
+        # The full test/ suite needs a live QGIS (its QGIS-dependent tests fail against
+        # stubs); the release workflow likewise runs only the pure-Python unit test(s).
+        # Run the headless-safe unit test here so the gate is green and meaningful.
+        run: uv run --no-project --with pytest python -m pytest test/test_inventory_processor_unit.py -q

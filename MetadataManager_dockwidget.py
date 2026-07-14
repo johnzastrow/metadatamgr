@@ -11,7 +11,7 @@ users through creating layer-specific metadata elements for those layers in an i
         begin                : 2025-10-05
         git sha              : $Format:%H$
         copyright            : (C) 2025 by John Zastrow
-        email                : br8kwall@gmail.com
+        email                : johnzastrow@users.noreply.github.com
  ***************************************************************************/
 
 /***************************************************************************
