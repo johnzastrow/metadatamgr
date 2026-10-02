@@ -7,7 +7,7 @@ qgisMaximumVersion=4.99
 description=Create and manage QGIS layer metadata with smart defaults, layer browser, and guided wizard. Integrates with inventory databases for efficient metadata workflows.
 version=0.6.5
 author=John Zastrow
-email=br8kwall@gmail.com
+email=johnzastrow@users.noreply.github.com
 
 about=Metadata Manager is a TRUE one-stop-shop for geospatial metadata management! Now includes BUILT-IN inventory creation - no need for separate Processing scripts. Create comprehensive geospatial data inventories directly within the plugin, then seamlessly create metadata for your layers. Features: (1) Integrated Inventory Scanner with full inventory_miner functionality, (2) Smart Defaults auto-populate from ALL metadata sources (FGDC, ESRI, ISO 19115, .qmd, embedded), (3) Layer Browser with filtering and Next/Previous navigation, (4) 4-step guided wizard with contact/link management, (5) Metadata Quality Dashboard with statistics and drill-downs, (6) Auto-save to database cache and .qmd files, (7) Unified GeoPackage database for inventory + metadata. Perfect for data managers who need to catalog AND document large geospatial data collections in a single, efficient workflow.
 

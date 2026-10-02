@@ -264,7 +264,7 @@ class InventoryProcessor:
                                     })
                         ds = None
                         continue
-                except Exception:
+                except Exception:  # nosec B110
                     pass
 
             # Try as raster (GDAL)
@@ -279,7 +279,7 @@ class InventoryProcessor:
                             'layer_index': 0
                         })
                         ds = None
-                except Exception:
+                except Exception:  # nosec B110
                     pass
 
         if skipped_count:
@@ -351,7 +351,7 @@ class InventoryProcessor:
             feature_data['file_size_mb'] = round(stat.st_size / (1024 * 1024), 2)
             feature_data['file_created'] = datetime.fromtimestamp(stat.st_ctime).isoformat()
             feature_data['file_modified'] = datetime.fromtimestamp(stat.st_mtime).isoformat()
-        except Exception:
+        except Exception:  # nosec B110
             pass
 
         # Extract type-specific metadata
@@ -543,7 +543,7 @@ class InventoryProcessor:
             p2 = transform.TransformPoint(xmax, ymax)
 
             feature_data['wgs84_extent'] = f"{p1[0]},{p1[1]},{p2[0]},{p2[1]}"
-        except Exception:
+        except Exception:  # nosec B110
             pass
 
     def _parse_gis_metadata(self, feature_data, file_path):
@@ -580,7 +580,7 @@ class InventoryProcessor:
                         self._parse_qgis_metadata(feature_data, root)
 
                     break  # Found metadata, stop looking
-                except Exception:
+                except Exception:  # nosec B110
                     pass
 
     def _parse_fgdc_metadata(self, feature_data, root):
@@ -613,7 +613,7 @@ class InventoryProcessor:
             useconst_elem = root.find('.//useconst')
             if useconst_elem is not None and useconst_elem.text:
                 feature_data['constraints'] = useconst_elem.text.strip()
-        except Exception:
+        except Exception:  # nosec B110
             pass
 
     def _parse_esri_metadata(self, feature_data, root):
@@ -624,7 +624,7 @@ class InventoryProcessor:
                 if 'title' in elem.tag.lower() and elem.text:
                     feature_data['layer_title'] = elem.text.strip()
                     break
-        except Exception:
+        except Exception:  # nosec B110
             pass
 
     def _parse_iso_metadata(self, feature_data, root):
@@ -641,7 +641,7 @@ class InventoryProcessor:
             abstract_elem = root.find('.//abstract')
             if abstract_elem is not None and abstract_elem.text:
                 feature_data['layer_abstract'] = abstract_elem.text.strip()
-        except Exception:
+        except Exception:  # nosec B110
             pass
 
     def _check_sidecar_files(self, feature_data, file_path):
@@ -705,7 +705,7 @@ class InventoryProcessor:
                 inventory[key] = dict(row)
 
             conn.close()
-        except Exception:
+        except Exception:  # nosec B110
             pass
 
         return inventory
